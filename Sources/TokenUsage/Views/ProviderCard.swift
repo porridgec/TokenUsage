@@ -57,20 +57,20 @@ struct WindowRow: View {
             HStack(spacing: 8) {
                 Text(window.label)
                     .foregroundStyle(.secondary)
-                    .frame(width: 64, alignment: .leading)
+                    .frame(width: 76, alignment: .leading)
                 // 电池语义：条长 = 剩余额度，与环形图标一致（绿=充足，随消耗缩短变橙/红）
                 ProgressView(value: min(max(window.remainingPercent, 0), 100), total: 100)
                     .progressViewStyle(.linear)
                     .tint(tint)
                 Text("剩 \(window.remainingPercent.compactPercentText)%")
                     .monospacedDigit()
-                    .frame(width: 56, alignment: .trailing)
+                    .frame(width: 64, alignment: .trailing)
             }
             if let resetsAt = window.resetsAt {
                 Text("重置 \(resetsAt.formatted(date: .omitted, time: .shortened))")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                    .padding(.leading, 72)
+                    .padding(.leading, 76)
             }
         }
     }

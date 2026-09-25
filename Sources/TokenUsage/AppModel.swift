@@ -81,10 +81,12 @@ final class AppModel {
     /// 每次刷新完成后回调（StatusBarController 用它更新菜单栏标题/图标）。
     var didRefresh: (() -> Void)?
 
+    private let isDemoMode = ProcessInfo.processInfo.arguments.contains("--demo-data")
+
     init() {
         KeychainStore.migrateLegacyItems()
-        if ProcessInfo.processInfo.arguments.contains("--demo-data") {
-            // 文档截图用演示数据（README 截图），不触发网络与定时刷新
+        if isDemoMode {
+            // README 截图用演示模式：固定三家数据，不联网、不清空
             applyDemoData()
         } else {
             reloadProviders()
@@ -153,6 +155,12 @@ final class AppModel {
     }
 
     func refreshAll() async {
+        if isDemoMode {
+            // 演示模式：不联网，仅保留演示快照
+            lastRefreshAt = Date()
+            didRefresh?()
+            return
+        }
         reloadProviders()
         guard !isRefreshing else { return }
         isRefreshing = true
