@@ -20,12 +20,12 @@ SwiftUI · 纯本地 · 无遥测 · API key 只存 Keychain
 <td align="center" rowspan="2"><b>iOS 主界面</b></td>
 </tr>
 <tr>
-<td><img src="docs/screenshot-popover-v2.png" alt="macOS 面板" width="330" /></td>
-<td rowspan="1"><img src="docs/screenshot-ios-v2.png" alt="iOS 主界面" width="230" /></td>
+<td><img src="docs/screenshot-popover-v3.png" alt="macOS 面板" width="330" /></td>
+<td rowspan="1"><img src="docs/screenshot-ios-v3.png" alt="iOS 主界面" width="230" /></td>
 </tr>
 </table>
 
-<img src="docs/screenshot-settings-v3.png" alt="macOS 设置" width="480" />
+<img src="docs/screenshot-settings-v4.png" alt="macOS 设置" width="480" />
 
 > 菜单栏图标：环长 = 剩余额度（越绿越健康），圆心为剩余百分比；面板与设置窗口如上。
 > 截图由内置参数自动生成：`--demo-data`（演示数据）、`--show-panel` / `--shot=<name>:<path>`（离屏渲染导出）。
@@ -46,6 +46,7 @@ SwiftUI · 纯本地 · 无遥测 · API key 只存 Keychain
 | ChatGPT（Plus/Pro） | 5 小时窗 + 周窗用量（读 Codex CLI OAuth） | 仅 macOS |
 - **凭据互通**：iCloud 钥匙串自动同步（Mac 存 key → iPhone 免配置），QR 码离线导入兜底
 - **菜单栏图标可配置**：显示哪一家订阅 × 哪个维度（5 小时 / 每周 / 每月 / 余额 / 最紧）
+- **重置时间两种风格**：倒计时（`重置 2 天 04:12:30 后`，逐秒跳动）/ 绝对时间（`重置 9月27日 20:52`，同年省略年份）
 - **登录时启动**：设置页一键开关 macOS 登录项（`SMAppService`），开机自动驻留菜单栏
 
 ## 环境要求

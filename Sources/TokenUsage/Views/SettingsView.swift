@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var keychainErrorMessage: String?
     @State private var showsQRExport = false
     @State private var showsScanner = false
+    /// 重置时间展示风格（macOS 面板与 iOS 主界面共用 WindowRow，两端都要能改）。
+    @AppStorage("resetTimeStyle") private var resetTimeStyle = ResetTimeStyle.countdown.rawValue
     #if os(macOS)
     @AppStorage("menuBarProvider") private var menuBarProvider = "all"
     @AppStorage("menuBarMetric") private var menuBarMetric = "tightest"
@@ -28,6 +30,16 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("显示") {
+                Picker("重置时间", selection: $resetTimeStyle) {
+                    ForEach(ResetTimeStyle.allCases) { style in
+                        Text(style.displayName).tag(style.rawValue)
+                    }
+                }
+                Text(selectedResetTimeStyle.hint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             #if os(macOS)
             LaunchAtLoginSection()
             #endif
@@ -130,6 +142,10 @@ struct SettingsView: View {
             .font(.caption)
             .foregroundStyle(model.isConfigured(.chatgpt) ? .secondary : Color.orange)
         }
+    }
+
+    private var selectedResetTimeStyle: ResetTimeStyle {
+        ResetTimeStyle(rawValue: resetTimeStyle) ?? .countdown
     }
 
     private func keyBinding(for provider: ProviderKind) -> Binding<String> {

@@ -52,6 +52,9 @@ struct ProviderCard: View {
 struct WindowRow: View {
     let window: UsageWindow
 
+    /// 展示风格由设置页决定（默认值倒计时），改完立即生效，无需重启。
+    @AppStorage("resetTimeStyle") private var resetTimeStyle = ResetTimeStyle.countdown.rawValue
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
@@ -67,12 +70,33 @@ struct WindowRow: View {
                     .frame(width: 64, alignment: .trailing)
             }
             if let resetsAt = window.resetsAt {
-                Text("重置 \(resetsAt.formatted(date: .omitted, time: .shortened))")
+                resetTimeText(resetsAt)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                    .monospacedDigit()
                     .padding(.leading, 76)
             }
         }
+    }
+
+    /// 倒计时需要逐秒重绘（TimelineView 1 秒节奏）；绝对时间是静态文本，零额外开销。
+    @ViewBuilder
+    private func resetTimeText(_ resetsAt: Date) -> some View {
+        if style == .countdown {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                if let countdown = ResetTimeStyle.countdownText(from: context.date, to: resetsAt) {
+                    Text("重置 \(countdown) 后")
+                } else {
+                    Text("即将重置")
+                }
+            }
+        } else {
+            Text("重置 \(ResetTimeStyle.absoluteText(resetsAt))")
+        }
+    }
+
+    private var style: ResetTimeStyle {
+        ResetTimeStyle(rawValue: resetTimeStyle) ?? .countdown
     }
 
     /// 剩余 <15% 红、<40% 橙、≥40% 绿（与环形图标阈值一致）。

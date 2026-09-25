@@ -103,6 +103,12 @@ final class StatusBarController: NSObject {
                 window.makeKey()
                 NSLog("TokenUsage[shot] window isKey=%d", window.isKeyWindow ? 1 : 0)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    // 截前再确认一次激活：窗口打开期间若有别的 app 抢走焦点，
+                    // 控件会以「非焦点」外观渲染（进度条全灰），截图就废了
+                    NSApp.activate(ignoringOtherApps: true)
+                    window.makeKey()
+                    NSLog("TokenUsage[shot] before capture: appActive=%d isKey=%d",
+                          NSApp.isActive ? 1 : 0, window.isKeyWindow ? 1 : 0)
                     let process = Process()
                     process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
                     process.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
