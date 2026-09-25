@@ -15,6 +15,7 @@ V1 数据源：DeepSeek / Z.AI Coding Plan / OpenCode Go（双端）+ ChatGPT（
 - **Mac → iOS 凭据导入（V1 主路径 = QR）**：Mac 设置页「导出到 iOS」生成二维码（`CredentialTransfer`，格式 `tokenusage-import:v1:<base64url>`），iOS「从 Mac 导入」扫码或粘贴。
 - **Keychain 同步（方案 A 已打通，前提 = Xcode 自动签名）**：写 `kSecAttrSynchronizable=true` 条目要求进程带 `keychain-access-groups` entitlement **且**有匹配的 development profile——① CLI 签名（无 entitlement/profile）→ 同步写入 -34018、带 entitlement 无 profile 则启动即杀（exit 137），两者实测 2026-09；② profile 必须显式列出同名 keychain 组，`Mac Team Provisioning Profile: *` 通配组不满足（amfid -413 "No matching profile found"）。解法 = 在你的付费团队 portal 注册 Mac/iPhone 设备后，`package.sh` 走 Xcode 自动签名（entitlements 见 project.yml，团队通过 `DEVELOPMENT_TEAM` 环境变量注入）。另外 `kSecAttrSynchronizableAny` 的**删除**查询不匹配非同步条目，删除需按 true/false 各删一遍（KeychainStore 已处理）；CLI 工具查不到同步条目（无 entitlement），验证以 app 自身日志为准。
 - 菜单栏用 `NSStatusItem` + `NSPopover`（AppKit），不要改回 `MenuBarExtra`：其 label 不支持「图标 + 文字」并排，组合时 SwiftUI 只取 Text、丢掉 Image。设置窗口也用 AppKit `NSWindow` 承载。
+- 「登录时启动」用 `SMAppService.mainApp`，状态直接读系统登录项数据库（不另存 UserDefaults，系统设置里改动能同步）；注意它按 bundle 标识注册，**`swift run` 的无外壳二进制注册不了**（status = `.notFound`），改开关要在 /Applications 的正式版上验证。
 - SF Symbols 的 `gauge.with.needle.*percent` 在 macOS 上**不存在**（iOS only），`NSImage(systemSymbolName:)` 会静默返回 nil——菜单栏图标用 `ImageRenderer` 自绘圆环（`UsageRingView`），别再试这些 symbol 名。
 - **图标**：`swift Scripts/make-icon.swift` 用 CoreGraphics 矢量重绘生成——macOS `Configs/Resources/AppIcon.icns`（squircle 渐变底 + 用量环 + 闪电）、iOS `Sources/TokenUsageiOS/Assets.xcassets`（1024 方图）。改设计就改脚本再重跑，别直接改 png/icns。
 - API key 只存 Keychain：不得写入仓库、UserDefaults 明文或日志输出。

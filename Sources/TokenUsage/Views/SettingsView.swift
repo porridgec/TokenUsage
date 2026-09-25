@@ -1,6 +1,8 @@
 import SwiftUI
 #if os(iOS)
 import WidgetKit
+#elseif os(macOS)
+import ServiceManagement
 #endif
 
 /// 设置窗口：管理三个 provider 的 API key（只存 Keychain）。
@@ -26,6 +28,9 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            #if os(macOS)
+            LaunchAtLoginSection()
+            #endif
             ForEach(ProviderKind.allCases.filter(\.usesStoredKey)) { provider in
                 ProviderKeySection(
                     provider: provider,
@@ -155,6 +160,67 @@ struct SettingsView: View {
         Task { await model.refreshAll() }
     }
 }
+
+#if os(macOS)
+/// 「登录时启动」开关：用 SMAppService.mainApp 注册系统登录项。
+/// 状态直接读系统登录项数据库（不另存 UserDefaults），系统设置里被改动也能同步。
+/// 注意：非 .app 形态运行的开发产物（swift run）没有 bundle，注册会失败并给出提示。
+private struct LaunchAtLoginSection: View {
+    @State private var status = SMAppService.mainApp.status
+    @State private var errorMessage: String?
+
+    var body: some View {
+        Section("启动") {
+            Toggle("登录时启动", isOn: Binding(
+                get: { status == .enabled },
+                set: { setEnabled($0) }
+            ))
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            } else if status == .requiresApproval {
+                HStack {
+                    Text("等待授权：需在「系统设置 → 通用 → 登录项」中允许本应用。")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Spacer()
+                    Button("打开登录项设置…") {
+                        SMAppService.openSystemSettingsLoginItems()
+                    }
+                }
+            } else {
+                Text("登录 Mac 后自动在菜单栏运行，无需手动启动。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .onAppear {
+            status = SMAppService.mainApp.status
+        }
+    }
+
+    private func setEnabled(_ enabled: Bool) {
+        var failure: String?
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            failure = "设置失败：\(error.localizedDescription)"
+        }
+        // 失败时回读真实状态，开关会自动弹回原位
+        status = SMAppService.mainApp.status
+        if status == .notFound {
+            // 登录项按 bundle 标识注册，没有 .app 外壳（swift run 开发产物）时无法生效
+            failure = "开发构建（直接运行二进制、无 .app 外壳）无法设置开机启动，请用安装版。"
+        }
+        errorMessage = failure
+    }
+}
+#endif
 
 /// 单个 provider 的 key 编辑区块。
 private struct ProviderKeySection: View {

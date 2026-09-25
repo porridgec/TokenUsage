@@ -134,7 +134,7 @@ final class StatusBarController: NSObject {
                 contentViewController: NSHostingController(rootView: SettingsView(model: model))
             )
             window.title = "TokenUsage 设置"
-            window.setContentSize(NSSize(width: 520, height: 460))
+            window.setContentSize(NSSize(width: 520, height: 540))
             window.center()
             settingsWindow = window
         }
