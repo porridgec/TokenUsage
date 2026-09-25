@@ -1,0 +1,9 @@
+.build/
+.swiftpm/
+build/
+xcuserdata/
+.DS_Store
+# XcodeGen 生成物（project.yml 为源）
+*.xcodeproj
+DerivedData/
+TokenUsage.app/
