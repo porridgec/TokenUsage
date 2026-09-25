@@ -12,6 +12,26 @@ SwiftUI · 纯本地 · 无遥测 · API key 只存 Keychain
 
 ---
 
+## 界面预览
+
+<table>
+<tr>
+<td align="center"><b>macOS 菜单栏面板</b></td>
+<td align="center" rowspan="2"><b>iOS 主界面</b></td>
+</tr>
+<tr>
+<td><img src="docs/screenshot-popover.png" alt="macOS 面板" width="330" /></td>
+<td rowspan="1"><img src="docs/screenshot-ios.png" alt="iOS 主界面" width="230" /></td>
+</tr>
+</table>
+
+<img src="docs/screenshot-settings.png" alt="macOS 设置" width="480" />
+
+> 菜单栏图标：环长 = 剩余额度（越绿越健康），圆心为剩余百分比；面板与设置窗口如上。
+> 截图由内置参数自动生成：`--demo-data`（演示数据）、`--show-panel` / `--shot=<name>:<path>`（离屏渲染导出）。
+
+---
+
 ## 功能
 
 - **macOS 菜单栏常驻**：环形图标实时显示订阅额度（弧长 = 剩余额度，越绿越健康，圆心显示剩余百分比），点击弹出详情面板

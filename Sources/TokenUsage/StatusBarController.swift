@@ -11,6 +11,7 @@ final class StatusBarController: NSObject {
     private let statusItem: NSStatusItem
     private let popover = NSPopover()
     private var settingsWindow: NSWindow?
+    private var shotPanelWindow: NSWindow?
     private let iconView: PassThroughHostingView<MenuBarIconView>
 
     init(model: AppModel) {
@@ -49,6 +50,61 @@ final class StatusBarController: NSObject {
         iconView.rootView = MenuBarIconView(value: model.menuBarRingValue())
     }
 
+    // MARK: 文档截图支持（README 生成脚本用）
+
+    /// 打开弹出面板（配合 --show-panel）。延迟到状态栏按钮挂载完成后再显示。
+    func showPanelForScreenshot() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self, let button = self.statusItem.button else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            // 显示瞬间存下 panel 引用（延迟截取时再取 view.window 可能已为 nil）
+            self.shotPanelWindow = self.popover.contentViewController?.view.window
+            NSLog("TokenUsage[shot] panel shown, window=%@", self.shotPanelWindow == nil ? "nil" : "ok")
+        }
+    }
+
+    /// 自拍自家窗口并写 PNG。
+    /// - settings：`screencapture -l <windowID>`（本进程窗口免屏幕录制权限）
+    /// - popover：NSPopover 的临时面板 screencapture 抓不到，改用 ImageRenderer
+    ///   离屏渲染内容视图（macOS 26 SDK 已禁用 CGWindowListCreateImage）。
+    func captureWindow(named: String, to path: String) {
+        let delay: TimeInterval = named == "settings" ? 0.6 : 2.6
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self else { return }
+            switch named {
+            case "settings":
+                guard let window = self.settingsWindow else {
+                    NSLog("TokenUsage[shot] %@: window not found", named)
+                    return
+                }
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                process.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
+                try? process.run()
+                process.waitUntilExit()
+                NSLog("TokenUsage[shot] %@ -> %@ (exit %d)", named, path, process.terminationStatus)
+            case "popover":
+                let view = MenuContent(model: self.model, onOpenSettings: {})
+                let renderer = ImageRenderer(content: view)
+                renderer.proposedSize = ProposedViewSize(width: 354, height: nil)
+                renderer.scale = 2
+                guard let image = renderer.nsImage,
+                      let tiff = image.tiffRepresentation,
+                      let rep = NSBitmapImageRep(data: tiff),
+                      let data = rep.representation(using: .png, properties: [:])
+                else {
+                    NSLog("TokenUsage[shot] popover: render failed")
+                    return
+                }
+                try? data.write(to: URL(fileURLWithPath: path))
+                NSLog("TokenUsage[shot] popover -> %@", path)
+            default:
+                break
+            }
+        }
+    }
+
     @objc private func togglePopover(_ sender: Any?) {
         if popover.isShown {
             popover.performClose(sender)
@@ -60,7 +116,7 @@ final class StatusBarController: NSObject {
         }
     }
 
-    private func openSettings() {
+    func openSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
                 contentViewController: NSHostingController(rootView: SettingsView(model: model))

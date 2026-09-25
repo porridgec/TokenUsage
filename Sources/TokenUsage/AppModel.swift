@@ -83,8 +83,42 @@ final class AppModel {
 
     init() {
         KeychainStore.migrateLegacyItems()
-        reloadProviders()
-        startAutoRefresh()
+        if ProcessInfo.processInfo.arguments.contains("--demo-data") {
+            // 文档截图用演示数据（README 截图），不触发网络与定时刷新
+            applyDemoData()
+        } else {
+            reloadProviders()
+            startAutoRefresh()
+        }
+    }
+
+    private func applyDemoData() {
+        providers = [.deepseek, .zaiCodingPlan, .opencodeGo]
+        snapshots = [
+            .zaiCodingPlan: UsageSnapshot(
+                windows: [
+                    UsageWindow(label: "5 小时窗", usedPercent: 34, resetsAt: Date().addingTimeInterval(3_600)),
+                    UsageWindow(label: "本周", usedPercent: 51, resetsAt: Date().addingTimeInterval(172_800)),
+                ],
+                planLevel: "pro"
+            ),
+            .opencodeGo: UsageSnapshot(
+                windows: [
+                    UsageWindow(label: "5 小时窗", usedPercent: 10, resetsAt: Date().addingTimeInterval(3_600)),
+                    UsageWindow(label: "本周", usedPercent: 15, resetsAt: Date().addingTimeInterval(200_000)),
+                    UsageWindow(label: "本月", usedPercent: 18, resetsAt: Date().addingTimeInterval(1_000_000)),
+                ],
+                planLevel: "Go"
+            ),
+            .deepseek: UsageSnapshot(
+                balances: [
+                    BalanceInfo(currency: "CNY", total: "25.31", isAvailable: true),
+                    BalanceInfo(currency: "USD", total: "0.00", isAvailable: true),
+                ]
+            ),
+        ]
+        lastRefreshAt = Date()
+        didRefresh?()
     }
 
     func isConfigured(_ provider: ProviderKind) -> Bool {
