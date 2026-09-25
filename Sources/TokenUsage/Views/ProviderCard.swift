@@ -58,7 +58,8 @@ struct WindowRow: View {
                 Text(window.label)
                     .foregroundStyle(.secondary)
                     .frame(width: 64, alignment: .leading)
-                ProgressView(value: min(max(window.usedPercent, 0), 100), total: 100)
+                // 电池语义：条长 = 剩余额度，与环形图标一致（绿=充足，随消耗缩短变橙/红）
+                ProgressView(value: min(max(window.remainingPercent, 0), 100), total: 100)
                     .progressViewStyle(.linear)
                     .tint(tint)
                 Text("剩 \(window.remainingPercent.compactPercentText)%")
@@ -74,12 +75,12 @@ struct WindowRow: View {
         }
     }
 
-    /// 与菜单栏同一套配色：用量 <60% 绿、60–85% 橙、≥85% 红（显式色，不依赖 accent 解析）。
+    /// 剩余 <15% 红、<40% 橙、≥40% 绿（与环形图标阈值一致）。
     private var tint: Color {
-        switch window.usedPercent {
-        case ..<60: .green
-        case ..<85: .orange
-        default: .red
+        switch window.remainingPercent {
+        case ..<15: .red
+        case ..<40: .orange
+        default: .green
         }
     }
 }
