@@ -74,10 +74,11 @@ struct WindowRow: View {
         }
     }
 
+    /// 与菜单栏同一套配色：用量 <60% 绿、60–85% 橙、≥85% 红（显式色，不依赖 accent 解析）。
     private var tint: Color {
         switch window.usedPercent {
-        case ..<50: .accentColor
-        case 50..<85: .orange
+        case ..<60: .green
+        case ..<85: .orange
         default: .red
         }
     }

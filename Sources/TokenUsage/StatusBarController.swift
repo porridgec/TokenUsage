@@ -85,20 +85,32 @@ final class StatusBarController: NSObject {
                 process.waitUntilExit()
                 NSLog("TokenUsage[shot] %@ -> %@ (exit %d)", named, path, process.terminationStatus)
             case "popover":
-                let view = MenuContent(model: self.model, onOpenSettings: {})
-                let renderer = ImageRenderer(content: view)
-                renderer.proposedSize = ProposedViewSize(width: 354, height: nil)
-                renderer.scale = 2
-                guard let image = renderer.nsImage,
-                      let tiff = image.tiffRepresentation,
-                      let rep = NSBitmapImageRep(data: tiff),
-                      let data = rep.representation(using: .png, properties: [:])
-                else {
-                    NSLog("TokenUsage[shot] popover: render failed")
-                    return
+                // NSPopover 面板无法被 screencapture 截取、ImageRenderer 离屏渲染
+                // 又会丢环境配色（ProgressView 变黄块、primary 文字不可读），
+                // 改用真实 NSWindow 承载 MenuContent 截图，观感与真机面板一致。
+                let window = KeyableBorderlessWindow(
+                    contentViewController: NSHostingController(
+                        rootView: MenuContent(model: self.model, onOpenSettings: {})
+                    )
+                )
+                window.styleMask = [.borderless]
+                window.setContentSize(NSSize(width: 354, height: 470))
+                window.center()
+                // 激活 + makeKey：非 key 窗口的控件会以灰显（inactive）外观渲染；
+                // accessory app 必须先 activate 再 makeKey，顺序反了会静默失败
+                NSApp.activate(ignoringOtherApps: true)
+                window.makeKeyAndOrderFront(nil)
+                window.makeKey()
+                NSLog("TokenUsage[shot] window isKey=%d", window.isKeyWindow ? 1 : 0)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    let process = Process()
+                    process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                    process.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
+                    try? process.run()
+                    process.waitUntilExit()
+                    window.close()
+                    NSLog("TokenUsage[shot] popover -> %@ (exit %d)", path, process.terminationStatus)
                 }
-                try? data.write(to: URL(fileURLWithPath: path))
-                NSLog("TokenUsage[shot] popover -> %@", path)
             default:
                 break
             }
@@ -135,6 +147,11 @@ final class StatusBarController: NSObject {
 /// 点击穿透的 NSHostingView：让点击落到状态栏按钮上（触发 popover）。
 final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+/// 无边框窗口默认不能成为 key 窗口（控件会灰显），子类化放行。
+final class KeyableBorderlessWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
 }
 
 /// 菜单栏图标：纯圆环（弧长 = 剩余额度，剩余越多越绿）+ 圆心剩余百分比数字。
