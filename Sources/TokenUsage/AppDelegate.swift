@@ -6,13 +6,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBar: StatusBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 文档截图用的隐藏启动参数（README 生成脚本）。
+        // --appearance=dark|light：固定外观，避免 README 截图跟着系统外观设置变来变去
+        // （系统外观与 app 域的 AppleInterfaceStyle 都压不住，只能在运行时设 NSApp.appearance）
+        let arguments = CommandLine.arguments
+        for argument in arguments where argument.hasPrefix("--appearance=") {
+            let name = String(argument.dropFirst("--appearance=".count))
+            NSApp.appearance = NSAppearance(named: name == "light" ? .aqua : .darkAqua)
+        }
+
         let model = AppModel()
         self.model = model
         let statusBar = StatusBarController(model: model)
         self.statusBar = statusBar
 
         // 文档截图用的隐藏启动参数（README 生成脚本）
-        let arguments = CommandLine.arguments
         if arguments.contains("--show-panel") {
             statusBar.showPanelForScreenshot()
         }

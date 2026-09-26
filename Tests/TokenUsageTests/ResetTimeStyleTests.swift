@@ -32,25 +32,31 @@ struct ResetTimeStyleTests {
         #expect(ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(-5)) == nil)
     }
 
-    @Test("绝对时间：同年省略年份，跨年补上")
-    func absoluteYearRule() {
-        let locale = Locale(identifier: "zh_CN")
+    @Test("绝对时间：固定中文 24 小时制，同年省略年份、跨年补上")
+    func absoluteTextIsChinese() {
+        let shanghai = TimeZone(identifier: "Asia/Shanghai")!
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!
+        calendar.timeZone = shanghai
         let target = calendar.date(from: DateComponents(year: 2024, month: 9, day: 27, hour: 20, minute: 52))!
         let sameYear = ResetTimeStyle.absoluteText(
             target,
             now: calendar.date(from: DateComponents(year: 2024, month: 9, day: 26))!,
-            locale: locale
+            locale: ResetTimeStyle.displayLocale,
+            timeZone: shanghai
         )
         let crossYear = ResetTimeStyle.absoluteText(
             target,
             now: calendar.date(from: DateComponents(year: 2025, month: 1, day: 5))!,
-            locale: locale
+            locale: ResetTimeStyle.displayLocale,
+            timeZone: shanghai
         )
-        #expect(!sameYear.contains("2024"))
-        #expect(crossYear.contains("2024"))
-        // 日号与月日始终在（时区换算不会跨日），顺便确认不是空串
-        #expect(sameYear.contains("27") && crossYear.contains("27"))
+        #expect(sameYear == "9月27日 20:52")
+        #expect(crossYear == "2024年9月27日 20:52")
+    }
+
+    @Test("默认 locale 就是中文（不跟系统语言）")
+    func defaultLocaleIsChinese() {
+        #expect(ResetTimeStyle.displayLocale.identifier == "zh_CN")
+        #expect(ResetTimeStyle.absoluteText(epoch) == ResetTimeStyle.absoluteText(epoch, locale: ResetTimeStyle.displayLocale))
     }
 }

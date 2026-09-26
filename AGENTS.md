@@ -6,13 +6,14 @@ V1 数据源：DeepSeek / Z.AI Coding Plan / OpenCode Go（双端）+ ChatGPT（
 ## 项目约定
 
 - 与用户交流、文档、代码注释一律用中文；代码标识符保持英文。
+- **界面文案全中文，日期格式也固定中文**：不要用 `.formatted()` 的系统 locale（英文系统会输出「重置 Sep 26 at 05:41」这种中英混排），统一走 `ResetTimeStyle.displayLocale`（zh_CN，24 小时制）+ 同年省略年份。注意 `Date.FormatStyle.timeZone(_:)` 是「时区名格式」不是时区值，要设时区得给 `style.timeZone` 属性赋值。
 - macOS 侧是 Swift Package 的 executable target，不建 xcodeproj、不用 XcodeGen/Tuist（iOS 侧例外，见下）。
 - 最低 macOS 15。App 形态：菜单栏常驻（NSStatusItem 自绘环形进度图标，NSPopover 下拉面板）+ 独立 NSWindow 设置窗口管理 API key。
 - 构建 / 测试：`swift build` / `swift test`；**开发运行用 `Scripts/run-dev.sh`**（构建后用固定开发证书签名再跑；直接 `swift run` 的 ad-hoc 签名每次都变，Keychain 会每次弹访问授权）；**打包安装用 `Scripts/package.sh`**（走 XcodeGen 工程 + 自动签名出 development profile，装到 /Applications，需 Xcode 已登录开发者账号）。
 - **iOS 工程**：源是 `project.yml`，`xcodeproj` 是 XcodeGen 生成物（已 gitignore，勿手改勿提交）。构建用 `Scripts/build-ios.sh`，模拟器运行用 `Scripts/run-ios-sim.sh`。iOS target 通过 `includes/excludes` 直接编译 `Sources/TokenUsage` 里的共享文件（AppKit 壳四个文件被 exclude），**没有独立 Core 模块、零 public 样板**——新增共享代码放进 Sources/TokenUsage 即双端可用，新增 macOS 专属文件记得同步加进 excludes。小组件 target 只编入 `SnapshotStore.swift` / `Models.swift` / `Views/UsageRingView.swift`。
 - iOS 数据源为三家（无 ChatGPT）：凭据来自 `~/.codex/auth.json`，iOS 上不存在，`AppModel.availableProviders` 已按平台过滤；iOS 的 ChatGPT 接入方案（完整 OAuth）留待后续版本。
 - **小组件数据流**：app 每次刷新把快照 JSON 写入 App Group（`group.com.tokenusage.shared`，`SnapshotStore`），widget 只读快照，不碰网络与 key。
-- **README 截图（macOS）**：`--shot=` / `--show-panel` / `--show-settings` 必须在**正式安装版**上跑，且用 `open -n -a /Applications/TokenUsage.app --args …` 启动——直接 exec 二进制时 app 拿不到焦点，SwiftUI 控件按「非焦点」外观渲染，**进度条 tint 全变灰**（window 仍 `isKeyWindow=1`，光看日志发现不了）。另：`open` 启动的 cwd 不是仓库根，`--shot=` 目标路径必须写**绝对路径**；一次只截一个窗口（两个窗口同时开会互相抢 key）；改完截图记得换文件名（-vN）击穿 GitHub Camo 缓存。
+- **README 截图（macOS）**：`--shot=` / `--show-panel` / `--show-settings` 必须在**正式安装版**上跑，且用 `open -n -a /Applications/TokenUsage.app --args …` 启动——直接 exec 二进制时 app 拿不到焦点，SwiftUI 控件按「非焦点」外观渲染，**进度条 tint 全变灰**（window 仍 `isKeyWindow=1`，光看日志发现不了）。另：`open` 启动的 cwd 不是仓库根，`--shot=` 目标路径必须写**绝对路径**；一次只截一个窗口（两个窗口同时开会互相抢 key）；外观统一加 `--appearance=dark`（系统外观、启动参数 `-AppleInterfaceStyle`、app 域 `AppleInterfaceStyle` 三者都压不住，只有运行时设 `NSApp.appearance` 有效，见 AppDelegate）；改完截图记得换文件名（-vN）击穿 GitHub Camo 缓存。
 - **Mac → iOS 凭据导入（V1 主路径 = QR）**：Mac 设置页「导出到 iOS」生成二维码（`CredentialTransfer`，格式 `tokenusage-import:v1:<base64url>`），iOS「从 Mac 导入」扫码或粘贴。
 - **Keychain 同步（方案 A 已打通，前提 = Xcode 自动签名）**：写 `kSecAttrSynchronizable=true` 条目要求进程带 `keychain-access-groups` entitlement **且**有匹配的 development profile——① CLI 签名（无 entitlement/profile）→ 同步写入 -34018、带 entitlement 无 profile 则启动即杀（exit 137），两者实测 2026-09；② profile 必须显式列出同名 keychain 组，`Mac Team Provisioning Profile: *` 通配组不满足（amfid -413 "No matching profile found"）。解法 = 在你的付费团队 portal 注册 Mac/iPhone 设备后，`package.sh` 走 Xcode 自动签名（entitlements 见 project.yml，团队通过 `DEVELOPMENT_TEAM` 环境变量注入）。另外 `kSecAttrSynchronizableAny` 的**删除**查询不匹配非同步条目，删除需按 true/false 各删一遍（KeychainStore 已处理）；CLI 工具查不到同步条目（无 entitlement），验证以 app 自身日志为准。
 - 菜单栏用 `NSStatusItem` + `NSPopover`（AppKit），不要改回 `MenuBarExtra`：其 label 不支持「图标 + 文字」并排，组合时 SwiftUI 只取 Text、丢掉 Image。设置窗口也用 AppKit `NSWindow` 承载。

@@ -122,17 +122,31 @@ enum ResetTimeStyle: String, CaseIterable, Identifiable, Sendable {
         return String(format: "%02d:%02d", minutes, seconds)
     }
 
+    /// 界面文案全中文，日期也固定中文格式：不跟系统语言走，
+    /// 否则英文系统上会出现「重置 Sep 26 at 05:41」这种中英混排。
+    static let displayLocale = Locale(identifier: "zh_CN")
+
     /// 绝对时间文案：同年内省略年份（否则每月都写「2026年」太啰嗦），跨年补上。
-    static func absoluteText(_ date: Date, now: Date = .now, locale: Locale = .current) -> String {
+    /// - Parameters:
+    ///   - locale / timeZone: 默认跟随系统（中文格式 + 24 小时制），测试可注入固定值。
+    static func absoluteText(
+        _ date: Date,
+        now: Date = .now,
+        locale: Locale = ResetTimeStyle.displayLocale,
+        timeZone: TimeZone = .current
+    ) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = locale
+        calendar.timeZone = timeZone
         let sameYear = calendar.component(.year, from: date) == calendar.component(.year, from: now)
         var style = Date.FormatStyle(date: .omitted, time: .shortened)
             .month(.abbreviated)
             .day()
             .hour()
             .minute()
-            .locale(locale)
+        // locale / timeZone 是属性而非链式参数（timeZone(_:) 是「时区名格式」）
+        style.locale = locale
+        style.timeZone = timeZone
         if !sameYear {
             style = style.year()
         }
