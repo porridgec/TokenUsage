@@ -62,9 +62,7 @@ struct WindowRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 76, alignment: .leading)
                 // 电池语义：条长 = 剩余额度，与环形图标一致（绿=充足，随消耗缩短变橙/红）
-                ProgressView(value: min(max(window.remainingPercent, 0), 100), total: 100)
-                    .progressViewStyle(.linear)
-                    .tint(tint)
+                RemainingBar(remainingPercent: window.remainingPercent, tint: tint)
                 Text("剩 \(window.remainingPercent.compactPercentText)%")
                     .monospacedDigit()
                     .frame(width: 64, alignment: .trailing)
@@ -106,5 +104,28 @@ struct WindowRow: View {
         case ..<40: .orange
         default: .green
         }
+    }
+}
+
+/// 自绘电池条：胶囊轨道 + 按剩余比例的填充。
+/// 不用 ProgressView 的原因（macOS 26 实测）：真实 NSPopover 里 `.tint` 首帧不生效、
+/// 回落系统 accent 蓝，要等数值变化触发重绘才上色；纯形状 + 显式颜色完全可控，
+/// 顺带免疫「非焦点窗口控件灰显」那类问题（面板未激活时打开也保持正确配色）。
+private struct RemainingBar: View {
+    let remainingPercent: Double
+    let tint: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let fraction = CGFloat(min(max(remainingPercent, 0), 100) / 100)
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.secondary.opacity(0.25))
+                Capsule()
+                    .fill(tint)
+                    .frame(width: max(geo.size.width * fraction, 4))
+            }
+        }
+        .frame(height: 6)
+        .animation(.easeOut(duration: 0.3), value: remainingPercent)
     }
 }

@@ -20,7 +20,7 @@ SwiftUI · 纯本地 · 无遥测 · API key 只存 Keychain
 <td align="center" rowspan="2"><b>iOS 主界面</b></td>
 </tr>
 <tr>
-<td><img src="docs/screenshot-popover-v5.png" alt="macOS 面板" width="330" /></td>
+<td><img src="docs/screenshot-popover-v6.png" alt="macOS 面板" width="330" /></td>
 <td rowspan="1"><img src="docs/screenshot-ios-v3.png" alt="iOS 主界面" width="230" /></td>
 </tr>
 </table>
