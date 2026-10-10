@@ -8,22 +8,16 @@ import Foundation
 struct ResetTimeStyleTests {
     private let epoch = Date(timeIntervalSince1970: 1_700_000_000)
 
-    @Test("倒计时：≥1 天补「N 天」前缀")
-    func countdownWithDays() {
-        let text = ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(2 * 86_400 + 4 * 3600 + 12 * 60 + 30))
-        #expect(text == "2 天 04:12:30")
+    @Test("倒计时：取最大两个单位（天+小时 / 小时+分钟）")
+    func countdownUnits() {
+        #expect(ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(187_950)) == "2天4小时")
+        #expect(ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(18_189)) == "5小时3分钟")
+        #expect(ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(3_600)) == "1小时")
     }
 
-    @Test("倒计时：不足 1 天给 HH:MM:SS（小时段不补零）")
-    func countdownHours() {
-        let text = ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(5 * 3600 + 60 + 9))
-        #expect(text == "5:01:09")
-    }
-
-    @Test("倒计时：不足 1 小时只给 MM:SS")
-    func countdownMinutes() {
-        let text = ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(12 * 60 + 30))
-        #expect(text == "12:30")
+    @Test("倒计时：不足 1 分钟自动进位成「1分钟」")
+    func countdownSubMinute() {
+        #expect(ResetTimeStyle.countdownText(from: epoch, to: epoch.addingTimeInterval(45)) == "1分钟")
     }
 
     @Test("倒计时：已到期返回 nil（调用方显示「即将重置」）")

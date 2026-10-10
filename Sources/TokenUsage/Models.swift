@@ -100,26 +100,26 @@ enum ResetTimeStyle: String, CaseIterable, Identifiable, Sendable {
     /// 设置页里的示例文案。
     var hint: String {
         switch self {
-        case .countdown: "例：重置 2 天 04:12:30 后，逐秒跳动。"
+        case .countdown: "例：重置 2天4小时后，按分钟粒度刷新。"
         case .absolute: "例：重置 9月27日 20:52，跨年时自动补年份。"
         }
     }
 
-    /// 倒计时文案：1 天 04:12:30 / 04:12:30 / 12:30（不足 1 小时省略小时段）。
+    /// 倒计时文案：取最大的两个单位（天/小时/分钟），按 locale 惯例格式化
+    /// （zh_CN →「2天4小时」「1小时30分钟」；不足 1 分钟自动进位成「1分钟」）。
     /// 已到期返回 nil，由调用方显示「即将重置」。
-    static func countdownText(from now: Date, to target: Date) -> String? {
+    static func countdownText(
+        from now: Date,
+        to target: Date,
+        locale: Locale = ResetTimeStyle.displayLocale
+    ) -> String? {
         let total = Int(target.timeIntervalSince(now))
         guard total > 0 else { return nil }
-        let hours = total / 3600
-        let minutes = (total % 3600) / 60
-        let seconds = total % 60
-        if hours >= 24 {
-            return "\(hours / 24) 天 \(String(format: "%02d:%02d:%02d", hours % 24, minutes, seconds))"
-        }
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        }
-        return String(format: "%02d:%02d", minutes, seconds)
+        return Duration.seconds(total)
+            .formatted(
+                .units(allowed: [.days, .hours, .minutes], width: .wide, maximumUnitCount: 2)
+                .locale(locale)
+            )
     }
 
     /// 界面文案全中文，日期也固定中文格式：不跟系统语言走，

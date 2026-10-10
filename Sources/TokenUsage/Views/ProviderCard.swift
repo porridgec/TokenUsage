@@ -77,13 +77,13 @@ struct WindowRow: View {
         }
     }
 
-    /// 倒计时需要逐秒重绘（TimelineView 1 秒节奏）；绝对时间是静态文本，零额外开销。
+    /// 倒计时是分钟粒度，30 秒重绘一次即可保持新鲜，不必逐秒跳动。
     @ViewBuilder
     private func resetTimeText(_ resetsAt: Date) -> some View {
         if style == .countdown {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
+            TimelineView(.periodic(from: .now, by: 30)) { context in
                 if let countdown = ResetTimeStyle.countdownText(from: context.date, to: resetsAt) {
-                    Text("重置 \(countdown) 后")
+                    Text("重置 \(countdown)后")
                 } else {
                     Text("即将重置")
                 }
